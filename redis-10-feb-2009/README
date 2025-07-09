@@ -1,0 +1,358 @@
+---------------------------
+REmote DIctionary Server
+---------------------------
+
+Redis is a remote server accessible via simple TCP queries that
+implements a key/value based database.
+
+Clients can store values associated to keys. keys are just
+strings, while values can be strings, lists, and sets.
+
+The basic operations looks like 'set the key "foo" with tha value "bar"'
+but there are more advanced operations like atomically increment an
+integer and return the incremented value, add or remove elements
+from a Set data structure and so on (see below for the full list
+of commands supported).
+
+Data is persisent across sessions, i.e. the server can be stopped
+than restarted without any data loss.
+The whole data set is taken in memory, read operations are just read
+from memory while write operations are written to disk. When the
+server is restarted it reads the whole dataset from disk before to
+accept queries.
+
+The following are the supported commands.
+After the commands section there is a description of the
+protocol used to talk with the server.
+
+========
+COMMANDS
+========
+
+EXISTS(key)
+    Test existence of 'key'.
+
+    Return 1 if 'key' exists, 0 otherwise.
+
+SET(key,val)
+    Update or create 'key' setting 'val' as value.
+
+    Return 1 if 'key' already existed, 0 if 'key' is created.
+
+SETIFNEW(key,val)
+    Create 'key' setting 'val' as value only if 'key' does not exist.
+
+    Return 1 if 'key' already exists and was set, otherwise 0 is returned.
+
+UPDATE(key,val)
+    Update 'key' setting 'val' as value only if 'key' already exists.
+
+    Return 1 if 'key' already existed and was set, otherwise 0 is returned.
+
+DELETE(key)
+    Remove 'key' if exists, otherwise no operation is performed
+
+    Return 1 if 'key' already existed and was removed, otherwise 0 is returned.
+
+INCR(key,n)
+    Increment (or decrement if 'n' is negative) number at 'key'
+    only if 'key' already exists.
+
+    Return the value stored at 'key' after the increment.
+
+    An error is raised if the old value is not parsable as an integer.
+    Note: this operation is guaranteed to be atomic
+
+INCRSET(key,n,init) Like INCR if 'key' already exists, otherwise
+    'key' is created with starting value of 'init', then the
+    given increment 'n' is added.
+
+    Return the value stored at 'key' after the increment.
+
+    An error is raised if the old value is not parsable as an integer.
+    Note: this operation is guaranteed to be atomic
+
+DICTADD(key,elements)
+    Consider the value at 'key' as a set data structure and adds
+    the specified elements to the set.
+    
+    Return 1 if 'key' already existed, otherwise 0 is returned.
+
+    The 'elements' argument should be passed to the server as a 'list'
+    type (see the PROTOCOL section for more information).
+
+    If the key already existed but was of type string and error
+    is returned.
+
+DICTDEL(key,elements)
+    Consider the value at 'key' as a set data structure and removes
+    the specified elements from the set.
+
+    Return 1 if 'key' already existed, otherwise 0 is returned.
+
+    The 'elements' argument should be passed to the server as a 'list'
+    type (see the PROTOCOL section for more information).
+
+    If the key already existed but was of type string and error
+    is returned.
+
+DICTLEN(key)
+    Returns -1 if 'key' does not exists or is not a set data structure,
+    otherwise the number of elements in the set is returned.
+
+DICTUNION(keyslist)
+
+    The 'keyslist' argument should be passed to the server as a 'list'
+    type (see the PROTOCOL section for more information).
+
+DICTINTERSECT(keyslist)
+
+    The 'keyslist' argument should be passed to the server as a 'list'
+    type (see the PROTOCOL section for more information).
+
+LISTADDHEAD(key,elements)
+    Consider 'key' as a list of elements, adding 'elements' on head.
+    This means that if elements are 1,2,3 and the list already
+    contained a,b,c the final list will contain 1,2,3,a,b,c.
+
+    If the key didn't existed an empty list is created before the
+    append operation.
+
+    Return the number of elements of the list.
+
+    The 'elements' argument should be passed to the server as a 'list'
+    type (see the PROTOCOL section for more information).
+
+    If the key already exists but was not of type list an error
+    is returned.
+
+LISTADDTAIL(key,elements)
+    Exactly list LISTADDHEAD but appends on tail.
+
+LISTGETINDEX(key,idx)
+    Get the list element at index 'idx'.
+    Indexes are zero based.
+
+    Return the value of the element at the specified position.
+
+    The 'elements' argument should be passed to the server as a 'list'
+    type (see the PROTOCOL section for more information).
+
+    If the key already exists but was not of type list an error
+    is returned.
+
+    If the index is out of range an error is returned.
+
+LISTGETRANGE(key,first,len) (be smart if len is negative, -1 = last)
+    Get the sublist consisting of 'len' elements starting at index 'first'
+    Indexes are zero based.
+    
+    Return a list of elements.
+
+    If the key already exists but was not of type list an error
+    is returned.
+
+    If the index/len is out of range an error is returned.
+
+LISTSETINDEX(key,idx,val)
+
+LISTPOPHEAD(key)
+
+LISTPOPTAIL(key)
+
+LISTLEN(key)
+
+LISTSORT(key,type,direction)
+    Sort the list stored at the specified key.
+    Type can be one of "numeric", "ascii", "nocase"
+    Direction ca be on of "ascending", "descending"
+
+    Return the sorted list.
+
+    If value of 'key' is not of list type an error is returned.
+
+    Note that this operation is able to remember that the
+    list is already sorted and will not sort an already sorted list
+    again. To call SORT with the same parameters in an already sorted
+    list will not waste CPU time. Of course if the list is modified
+    after the SORT operation the list will be sorted again.
+
+LISTMIN(key)
+    Return the (numeric) min element of the list.
+
+    If value of 'key' is not of list type an error is returned.
+
+LISTMAX(key)
+    Return the (numeric) max element of the list.
+
+    If value of 'key' is not of list type an error is returned.
+
+GET(key)
+    Return the value of 'key'.
+
+    If 'key' does not exist an error is returned.
+
+GETTYPE(key)
+    Return the type of the value stored as 'key' as a string.
+    The return value cah be one of the following:
+    "string" for strings
+    "set" for sets
+    "list" for lists
+    "nx" if the key does not exist
+
+MATCHKEYS(pattern)
+    Retrun a list of key names matching the pattern (in glob style,
+    for example 'news*' will match news1, news2, ..., while '*' will
+    match every key).
+
+MOVE(key1,key2)
+
+COPY(key1,key2)
+
+=================
+COMMAND MODIFIERS
+=================
+
+The TARGET special command
+
+All the Redis commands can be prefixed with the TAGET special command so that
+the return value of the original command instead to be returned to the client
+is stored in the specified key.
+
+For example the command
+
+    TARGET mytempkey LISTGETRANGE mykey 0 10
+
+will extract the first ten elements from 'mykey' and store them in 'mytempkey'.
+Every command can be prefixed with the TARGET <targetkey> command.
+
+This allows Redis to perform basic computaions on data without the networking
+overhead required otherwise. For example to get sort the elements of 'key'
+and return the first ten elements to the client it is possible to use the
+following commands:
+
+    TARGET temp LISTSORT key numeric ascending
+    LISTGETRANGE temp 0 10
+    DELETE temp
+
+Take in mind that using a fixed key name as temporary key is dangerous because
+multiple instances executing similar code at the same time mey result in
+race condtions. In order to prevent problems it is possible to obtain an
+unique temporary key name using:
+
+    INCRSET temp_id 1 0
+
+As specified in the next section "AUTO INCREMENTAL INDEXES".
+
+========================
+AUTO INCREMENTAL INDEXES
+========================
+
+Auto incremental indexes are not directly supported like it happens in
+relational databases, still the atomic primitives of increment supported
+by Redis makes it trivial to implement it:
+
+    INCRSET news_id 1 0
+
+Then you can use the returned integer to create the new key.
+
+Using the PHP Redis API this will translate into:
+
+    $newindex = redisQuery("incrset","news_id",1,0);
+    redisQuery("set","news_$newindex",$newsdata);
+
+$newindex is guaranteed to be unique for every instance calling
+redisQuery("incset","news_id",1,0) that increments the value of the key
+'news_id' by 1 and returns the incremented value. If the key didn't
+existed it is initialized at 0 before to be incremented.
+
+Then you can use $newindex to create a name-index key in order to
+create a new unique entry in the database.
+
+===========
+BINARY DATA
+===========
+
+Redis is binary safe so it is possible to use any kind of
+binary data as keys and values.
+
+=============
+DATA SET SIZE
+=============
+
+The whole database is taken in memory in order to make it
+really fast to access data so you are limited to some GB of
+raw data (but there is a certain overhead so the actual
+size of data is reduced).
+
+========
+PROTOCOL
+========
+
+The Redis protocol is designed with the following goals in mind:
+
+. Trivial to implement
+. Fast to parse
+. Human readable
+
+-------------------------
+Data types representation
+-------------------------
+
+Strings are represented as follows:
+
+s10:HelloWorld
+
+'s' is the type (string), 10 is the length, the rest is raw data.
+This is instead a list of two strings, "hello" and "world":
+
+l2:s5:hellos5:world
+
+Again 'l' is the type (list), 2 is the length of the list, and the
+following are the two elements of the list.
+
+Sets are represented exactly like lists, the difference is that
+instead of the 'l' the 'x' is used. This is a set with two
+elements hello and world:
+
+x2:s5:hellos5:world
+
+-------
+Queries
+-------
+
+Queries are just lists prefixed with the query length in bytes.
+In order to perform a query all it's needed to do is to connect
+to the server at the specified TCP port and send a list where every
+element is one part of the command.
+
+For example in order to perform the query SET("web","2.0") the
+string to send to the server is the following:
+
+21:l3:s3:SETs3:webs3:2.0
+
+As you can see the list l3:... is prefixed with 14: as the full
+list represetation in bytes is 14 bytes long.
+
+No newline or other end-of-line character is needed.
+
+-------
+Replies
+-------
+
+The server replies with a list where the two elements
+are in order: the return value, the error.
+Again like in queries the reply is prefixed with an
+integer representing the length of the reply in bytes.
+
+If there is no error the second element of the list is just
+the empty string.
+
+For example in response to the above SET command the server
+may reply a list composed of "0" (the return value), and ""
+(the error) like the following:
+
+9:l2:s1:0s0:
+
+Note how "s0:" represents the empty string since there is no
+error to report to the client.
