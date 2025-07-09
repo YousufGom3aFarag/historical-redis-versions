@@ -34,6 +34,8 @@ I was thanking with Uwe about a bugfix in Jim Tcl that had good effects in Redis
 
 Also, the second tarball has exactly the same date as the [first public post of Redis on Hacker News](https://news.ycombinator.com/item?id=494649). So indeed things started one year later, but now I know that in early 2008 I was thinking about writing this system, maybe wrote a few lines of code and some doc, and put the real efforts only one year later, I guess, when I really needed it for LLOOGG (my startup at the time). Apparently, however, LLOOGG was likely not the real trigger. My feeling is that writing Jim Tcl and having to work for long hours with database systems is what really pushed me into writing a database that looked like an interpreter for commands.
 
+EDIT: I thought about it a bit more, I believe that is more likely that LLOOGG survived some time using MySQL and other tricks, and Redis was implemented when "enough was enough" and we were no longer able to scale. So LLOOGG could actually be the real trigger here.
+
 ## Version 0.1 and its TODO note
 
 One interesting thing is that version 0.1 had inside already *most* of what made Redis later what it is today, even if this version was very basic, had no fork() based persistence whatsoever, no sets, no sorted sets, nothing, just set, get, del, ...
